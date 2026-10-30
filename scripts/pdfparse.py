@@ -121,17 +121,28 @@ def status_a(rec: dict) -> str:
     return "ok" if all(rec.get(k) for k in A_REQUIRED) else "ambiguous"
 
 
+def mark_unreadable(rec: dict) -> dict:
+    """A cell whose glyphs the PDF does not map to text (pdfplumber shows (cid:NNNN)) is not readable: null and noted."""
+    bad = [k for k, v in rec.items() if isinstance(v, str) and "(cid:" in v]
+    for k in bad:
+        rec[k] = None
+    if bad:
+        rec["parse_note"] = "unreadable glyphs in: " + ", ".join(bad)
+        rec["parse_status"] = "ambiguous"
+    return rec
+
+
 def parse_tables(tables) -> tuple[str, list[dict]]:
     rows = rows_of(tables)
     layout = classify(rows)
     if layout == "A":
         rec = parse_a(rows)
         rec["parse_status"] = status_a(rec)
-        return "A", [rec]
+        return "A", [mark_unreadable(rec)]
     if layout == "B":
         rec = parse_b(rows)
         rec["parse_status"] = status_b(rec)
-        return "B", [rec]
+        return "B", [mark_unreadable(rec)]
     return layout, []
 
 

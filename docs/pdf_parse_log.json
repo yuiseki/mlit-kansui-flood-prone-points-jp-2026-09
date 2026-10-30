@@ -1,0 +1,9 @@
+{
+ "pdfs": 100,
+ "records": 100,
+ "by_layout_status": {
+  "A/ambiguous": 4,
+  "A/ok": 96
+ },
+ "errors": []
+}

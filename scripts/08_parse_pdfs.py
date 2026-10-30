@@ -20,7 +20,7 @@ import pdfplumber
 ROOT = kansui.root()
 COLS = ["mgmt_no", "place_name", "road_name", "underpass_name", "road_kind", "pref_name", "municipality", "aza_chome",
         "banchi", "sakimei", "manager_name", "manager_tel", "manager_tel_text", "police_name", "police_tel", "police_text",
-        "fire_name", "fire_tel", "fire_text", "remarks", "extra_cells"]  # fmt: skip
+        "fire_name", "fire_tel", "fire_text", "remarks", "extra_cells", "parse_note"]  # fmt: skip
 
 
 def main() -> int:
