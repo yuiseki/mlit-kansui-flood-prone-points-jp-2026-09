@@ -55,7 +55,7 @@ def main() -> int:
         + (ROOT / "data" / "bases_added.txt").read_text()
     )
     page = {}
-    for layer, base in bases.items():
+    for base in bases.values():
         page.setdefault(
             kansui.bureau_of(base),
             base.replace("http://", "https://") + "/main/index.html",

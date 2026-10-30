@@ -69,7 +69,7 @@ def main() -> int:
             },
             ensure_ascii=False,
             indent=1,
-        )  # fmt: skip
+        )
         + "\n"
     )
     for b, v in out.items():
