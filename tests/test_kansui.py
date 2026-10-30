@@ -125,3 +125,14 @@ def test_extract_terms_for_the_tohoku_form():
     assert r["use_sentence"].endswith("に定めるとおりです。")
     assert "公共データ利用規約" in r["use_sentence"]
     assert r["important"] is None
+
+
+def test_pdf_plan_dedupes_and_sorts():
+    urls = ["https://www.a.mlit.go.jp/x/b.pdf", None, "https://www.a.mlit.go.jp/x/a.pdf", "https://www.a.mlit.go.jp/x/b.pdf", float("nan")]
+    assert kansui.pdf_plan(urls) == ["https://www.a.mlit.go.jp/x/a.pdf", "https://www.a.mlit.go.jp/x/b.pdf"]
+
+
+def test_pdf_name_keeps_the_bureau_apart():
+    assert kansui.pdf_name("https://www.ktr.mlit.go.jp/honkyoku/road/doro_bosaijoho_webmap/attachment/chibaken-02-001.pdf") == "ktr__chibaken-02-001.pdf"
+    with pytest.raises(ValueError):
+        kansui.pdf_name("https://example.com/a.txt")
