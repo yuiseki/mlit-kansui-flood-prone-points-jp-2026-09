@@ -1,22 +1,42 @@
 # Licence findings (2026-10-30)
 
-Question: is the KML of 冠水想定箇所 under the Public Data License 1.0 (PDL1.0), as reported to us?
+Question: is the KML of 冠水想定箇所 under the Public Data License 1.0 (PDL1.0)?
 
-Read, for each of the seven bureaus (thr, ktr, hrr, cbr, kkr, skr, qsr) and for the Chugoku bureau (cgr): the top page
-of the 道路防災情報Webマップ (`main/index.html`), the map page (`main/map.html`, for ktr), one list page (ktr Chiba), the
-map script (`js/doro_bousai.js`, `js/config.js`, for ktr). Saved under `evidence/pages/`.
+## First pass (superseded)
 
-Result: none of these pages contains a licence or terms statement (searched for 利用規約, 公共データ, ライセンス, 二次利用,
-著作権, オープンデータ). The pages say only that the background map is the GSI's 地理院地図 and give the update dates
-(冠水想定箇所: 平成25年9月 for ktr; 令和8年3月 for cgr), and a contact. The directory URLs of the web maps answer 403 (no
-index); the KML files themselves answer 200 with `application/vnd.google-earth.kml+xml` at
-`<base>/kml/<NN>_<pref>_kansui_point.kml` (the path is in the map script: `'../kml/' + pref + '.kml'`).
+The Webmap pages (top, map, list, scripts) of the eight bureaus carry no licence or terms statement (searched for 利用規約, 公共データ,
+ライセンス, 二次利用, 著作権, オープンデータ), and two web searches did not find one. Saved under `evidence/pages/`.
 
-Web searches (two, standard and extended) did not find a PDL1.0 statement for these KML either. A bureau-wide or
-MLIT-wide site policy was not used as evidence (not the data's own statement).
+## Second pass: each bureau's own terms page (footer link 'リンク・著作権等について' and the like), raw HTML saved under `evidence/terms/`
 
-Open: where did the PDL1.0 statement come from (a page of the bureaus, MLIT, or the data portal)? Save it under
-`evidence/` and set `pdl1.0_confirmed` to true in `docs/licence_status.json`; `src/publish.py` refuses until then.
+All eight bureaus' pages say that the content is usable under PDL1.0 (quotations in `docs/bureau_terms.json`, produced by
+`scripts/00_terms.py` from the saved pages):
 
-Other regions: 北海道 and 沖縄県: no KML of the same kind found (the search result for 沖縄 led to a page that redirects to the
-Okinawa General Bureau's top page; a Hokkaido web map was not located). 中国地方整備局: found, 5 KML (31 to 35), added.
+| Bureau | Page | Form of the statement |
+|---|---|---|
+| 東北 thr | https://www.thr.mlit.go.jp/policy.pdf (a PDF linked from the top page footer) | 「当ホームページのコンテンツの利用については、公共データ利用規約（第1.0版）に定めるとおりです。」 (no 重要情報 block, no attribution example) |
+| 関東 ktr | https://www.ktr.mlit.go.jp/guide/copyright.html | PDL1.0 sentence with 重要事項 |
+| 北陸 hrr | https://www.hrr.mlit.go.jp/help.html | PDL1.0 sentence with 重要情報 |
+| 中部 cbr | https://www.cbr.mlit.go.jp/policy.htm | PDL1.0 sentence with 重要情報 |
+| 近畿 kkr | https://www.kkr.mlit.go.jp/link.html | PDL1.0 sentence with 重要情報 |
+| 四国 skr | https://www.skr.mlit.go.jp/manual.html | PDL1.0 sentence with 重要情報 |
+| 九州 qsr | https://www.qsr.mlit.go.jp/pp/index.html | PDL1.0 sentence with 重要事項 (adds: content restricted by individual laws) |
+| 中国 cgr | https://www.cgr.mlit.go.jp/about_manual/index.html | PDL1.0 sentence with 重要情報 |
+
+Decision: all eight bureaus are included; none is excluded. The basis is each bureau's site-wide terms; no data-specific
+notice exists on the Webmap pages or in the KML (card says so).
+
+## Overrides checked
+
+- KML: no text outside the Placemarks and Styles (no Document name or description, no atom link), no rights word in any
+  Placemark description (the description is only the link to the 箇所表 PDF). The icon style URLs point to GSI symbols
+  (not part of the data).
+- Webmap pages: the top pages of the eight bureaus and the map pages of all eight: no 特記 or rights notice; the only mention is
+  that the background map is the GSI's 地理院地図.
+- 箇所表 PDFs (40 looked at, none uploaded): 2 say 'この地図は、国土地理院の標準地図を使用しています'; the position maps carry a GSI
+  map mark and the sites have street photographs; no other rights mark in the text; 366 embedded images (not inspected one by one).
+  The PDFs are therefore not part of the dataset (sha256 only).
+
+## Other regions
+
+北海道 and 沖縄県: no KML of the same kind found. 中国地方整備局: found and added (5 KML).

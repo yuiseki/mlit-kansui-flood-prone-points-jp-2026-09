@@ -34,8 +34,12 @@ def main() -> int:
         (ROOT / "data" / "bases_from_user.txt").read_text()
         + (ROOT / "data" / "bases_added.txt").read_text()
     )
-    frames, log = [], {"run": run.name, "files": {}}
+    status = json.loads((ROOT / "docs" / "licence_status.json").read_text())["bureaus"]
+    frames, log = [], {"run": run.name, "files": {}, "excluded_unconfirmed": {}}
     for layer, m in man["files"].items():
+        if not status[m["bureau"]]["confirmed"]:
+            log["excluded_unconfirmed"][layer] = m["bureau"]
+            continue
         rows, withdrawn = export.parse_kml(
             (run / "kml" / f"{layer}.kml").read_text(encoding="utf-8"), bases[layer]
         )

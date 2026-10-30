@@ -24,26 +24,40 @@ DOCS = [
 ]
 
 
+def licence_ok(status: dict, man_files: dict, layers: list[str], card: str) -> bool:
+    """True only when the card says PDL1.0 and every bureau that has a layer in the table is confirmed."""
+    return "license_name: pdl-1.0" in card and all(
+        status.get(man_files[layer]["bureau"], {}).get("confirmed") is True
+        for layer in layers
+    )
+
+
 def collect() -> dict[str, Path]:
-    st = json.loads((ROOT / "docs" / "licence_status.json").read_text())
+    st = json.loads((ROOT / "docs" / "licence_status.json").read_text())["bureaus"]
     card = (DATA / "README.md").read_text(encoding="utf-8")
-    if not st["pdl1.0_confirmed"] or "license_name: pdl-1.0" not in card:
-        raise SystemExit("the licence is not confirmed: do not publish")
+    log = json.loads((ROOT / "docs" / "export_log.json").read_text())
     run = max((DATA / "raw").glob("*/MANIFEST.json")).parent
     man = json.loads((run / "MANIFEST.json").read_text())
+    layers = [
+        layer for layer in man["files"] if layer in log["files"]
+    ]  # the layers that are in the table
+    if not licence_ok(st, man["files"], layers, card):
+        raise SystemExit("the licence is not confirmed: do not publish")
     ver = json.loads((ROOT / "docs" / "verify_local.json").read_text())
     if ver["problems"] or f"{ver['rows']:,}" not in card:
         raise SystemExit("the local verification or the card does not match the table")
     files = {"README.md": DATA / "README.md", "LICENSE": DATA / "LICENSE", "provenance.yaml": DATA / "provenance.yaml",
              f"raw/{run.name}/MANIFEST.json": run / "MANIFEST.json",
              "parquet/kansui_points.parquet": DATA / "parquet" / "kansui_points.parquet"}  # fmt: skip
-    for layer, m in man["files"].items():
+    for layer in layers:
+        m = man["files"][layer]
         p = run / "kml" / f"{layer}.kml"
         if hashlib.sha256(p.read_bytes()).hexdigest() != m["sha256"]:
             raise SystemExit(f"{layer} is not the file in its manifest")
         files[f"raw/{run.name}/kml/{layer}.kml"] = p
-    for p in sorted((ROOT / "evidence" / "pages").glob("*")):
-        files[f"evidence/pages/{p.name}"] = p
+    for sub in ("pages", "terms"):
+        for p in sorted((ROOT / "evidence" / sub).glob("*")):
+            files[f"evidence/{sub}/{p.name}"] = p
     for d in DOCS:
         files[f"docs/{d}"] = ROOT / "docs" / d
     for s in sorted((ROOT / "scripts").glob("*.py")):

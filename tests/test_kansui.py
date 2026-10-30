@@ -68,7 +68,7 @@ def test_parse_kml_reads_only_live_placemarks():
     assert rows[1]["lon"] == 141.0 and rows[1]["lat"] == 41.0
 
 
-def test_publish_refuses_while_the_licence_is_unconfirmed():
+def _publish():
     import importlib.util
 
     spec = importlib.util.spec_from_file_location(
@@ -76,5 +76,52 @@ def test_publish_refuses_while_the_licence_is_unconfirmed():
     )
     mod = importlib.util.module_from_spec(spec)
     spec.loader.exec_module(mod)
-    with pytest.raises(SystemExit, match="licence is not confirmed"):
-        mod.collect()
+    return mod
+
+
+def test_licence_gate_needs_every_bureau_in_the_table_confirmed():
+    pub = _publish()
+    man = {"a": {"bureau": "kkr"}, "b": {"bureau": "ktr"}}
+    card = "license_name: pdl-1.0"
+    st = {"kkr": {"confirmed": True}, "ktr": {"confirmed": True}}
+    assert pub.licence_ok(st, man, ["a", "b"], card)
+    assert not pub.licence_ok(
+        {"kkr": {"confirmed": True}, "ktr": {"confirmed": False}}, man, ["a", "b"], card
+    )
+    assert pub.licence_ok(
+        {"kkr": {"confirmed": True}, "ktr": {"confirmed": False}}, man, ["a"], card
+    )  # b is not in the table
+    assert not pub.licence_ok(st, man, ["a", "b"], "license_name: unconfirmed")
+    assert not pub.licence_ok(
+        {}, man, ["a"], card
+    )  # a bureau with no status is not confirmed
+
+
+def test_extract_terms_quotes_the_use_paragraph_and_the_important_notes():
+    import terms
+
+    text = (
+        "リンクについて 原則リンクフリーです。 2.当ホームページのコンテンツの利用について "
+        "当ホームページで公開している情報（以下「コンテンツ」といいます。）の著作権は、特記されていない限り国土交通省X地方整備局に帰属し、"
+        "権利表記の記載がない限り「 公共データ利用規約（第1.0版） 」（PDL1.0）に準拠した利用条件の下で、利用することができます。 "
+        "PDL1.0のうち、重要情報については「PDL1.0に関する重要情報」を参照してください。 "
+        "PDL1.0に関する重要情報 １） 出典の記載について ア） （出典記載例）出典：X地方整備局ホームページ （当該ページのURL） "
+        "イ） 加工して作成 ２） 本利用ルールが適用されないコンテンツについて ア） ロゴ イ） 別の利用ルール ぺージの上部へ フッター"
+    )
+    r = terms.extract_terms(text)
+    assert r["use_sentence"].startswith("当ホームページで公開している情報")
+    assert r["use_sentence"].endswith("利用することができます。")
+    assert "PDL1.0" in r["use_sentence"]
+    assert r["important"].startswith("PDL1.0に関する重要情報 １）")
+    assert r["important"].endswith("別の利用ルール")
+    assert "フッター" not in r["important"]
+
+
+def test_extract_terms_for_the_tohoku_form():
+    import terms
+
+    text = "２． 当ホームページのコンテンツの利用について 当ホームページのコンテンツの利用については、【 公共データ利用規約（第 1.0 版） (digital.go.jp) ［デジタル庁］】に定めるとおりです。 ３． プライバシーポリシー"
+    r = terms.extract_terms(text)
+    assert r["use_sentence"].endswith("に定めるとおりです。")
+    assert "公共データ利用規約" in r["use_sentence"]
+    assert r["important"] is None
