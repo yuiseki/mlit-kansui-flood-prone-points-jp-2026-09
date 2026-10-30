@@ -1,0 +1,4 @@
+{
+ "pdl1.0_confirmed": false,
+ "note": "No licence or terms statement was found on the bureau pages that serve the KML (top page, map page, list pages, the map's scripts) fetched on 2026-10-30. The user reports PDL1.0; the source of that statement is not in the evidence. Until it is saved under evidence/ and this flag is set, src/publish.py refuses to publish."
+}
