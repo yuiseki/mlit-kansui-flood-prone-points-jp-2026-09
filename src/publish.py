@@ -49,9 +49,7 @@ def collect() -> dict[str, Path]:
     files = {"README.md": DATA / "README.md", "LICENSE": DATA / "LICENSE", "provenance.yaml": DATA / "provenance.yaml",
              f"raw/{run.name}/MANIFEST.json": run / "MANIFEST.json",
              "parquet/kansui_points.parquet": DATA / "parquet" / "kansui_points.parquet",
-             "parquet/kansui_points_joined.parquet": DATA / "parquet" / "kansui_points_joined.parquet",
-             "parquet/pdf_records.parquet": DATA / "parquet" / "pdf_records.parquet",
-             f"raw/{run.name}/PDF_MANIFEST.json": run / "PDF_MANIFEST.json"}  # fmt: skip
+             }  # fmt: skip
     for layer in layers:
         m = man["files"][layer]
         p = run / "kml" / f"{layer}.kml"
@@ -64,7 +62,8 @@ def collect() -> dict[str, Path]:
     for d in DOCS:
         files[f"docs/{d}"] = ROOT / "docs" / d
     for s in sorted((ROOT / "scripts").glob("*.py")):
-        files[f"scripts/{s.name}"] = s
+        if s.name[:2] not in ("07", "08", "09", "10"):  # the PDF steps belong to the companion dataset
+            files[f"scripts/{s.name}"] = s
     missing = [k for k, v in files.items() if not v.is_file()]
     if missing:
         raise SystemExit(f"missing: {missing}")
