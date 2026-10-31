@@ -13,7 +13,7 @@ import pandas as pd
 import kansui
 
 ROOT = kansui.root()
-REPO = "kansui-flood-prone-points-jp-2026-09"
+REPO = "mlit-kansui-flood-prone-points-jp-2026-09"
 
 
 BUREAU_NAMES = [

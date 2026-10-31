@@ -537,7 +537,7 @@ wheels = [
 ]
 
 [[package]]
-name = "kansui-flood-prone-points-jp-2026-09"
+name = "mlit-kansui-flood-prone-points-jp-2026-09"
 version = "0.1.0"
 source = { virtual = "." }
 dependencies = [

@@ -14,7 +14,7 @@ from pathlib import Path
 
 ROOT = Path(__file__).resolve().parent.parent
 DATA = ROOT / "data"
-REPO = "yuiseki/kansui-flood-prone-points-jp-2026-09"
+REPO = "yuiseki/mlit-kansui-flood-prone-points-jp-2026-09"
 DOCS = [
     "export_log.json",
     "verify_local.json",
