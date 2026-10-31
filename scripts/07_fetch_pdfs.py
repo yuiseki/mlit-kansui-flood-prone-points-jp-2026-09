@@ -12,6 +12,7 @@ import json
 import sys
 import time
 import urllib.error
+import urllib.parse
 import urllib.request
 
 import geopandas as gpd
@@ -21,7 +22,7 @@ ROOT = kansui.root()
 
 
 def fetch(url: str):
-    req = urllib.request.Request(url, headers={"User-Agent": kansui.UA})
+    req = urllib.request.Request(urllib.parse.quote(url, safe=":/?&=%#~+,;@!*()'$[]"), headers={"User-Agent": kansui.UA})
     for attempt in (0, 1):
         try:
             with urllib.request.urlopen(req, timeout=90) as r:

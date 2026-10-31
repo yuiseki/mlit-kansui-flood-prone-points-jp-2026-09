@@ -16,6 +16,7 @@ import re
 import sys
 
 import geopandas as gpd
+import numpy as np
 import kansui
 import pandas as pd
 
@@ -23,6 +24,13 @@ ROOT = kansui.root()
 PDF_COLS = ["layout", "record_no", "mgmt_no", "place_name", "road_name", "underpass_name", "road_kind", "pref_name", "municipality",
             "aza_chome", "banchi", "sakimei", "manager_name", "manager_tel", "manager_tel_text", "police_name", "police_tel",
             "police_text", "fire_name", "fire_tel", "fire_text", "remarks", "extra_cells", "parse_status"]  # fmt: skip
+
+
+NAME_COLS = ["place_name", "underpass_name", "road_kind"]
+
+
+def has_furigana(v) -> bool:
+    return isinstance(v, str) and bool(re.match(r"^[ぁ-ん]+\s", v) or re.search(r"[ぁ-ん]\s[ぁ-ん]", v))
 
 
 def last_number(s) -> str | None:
@@ -51,9 +59,15 @@ def main() -> int:
     one = rec[rec["record_no"] == 1].set_index("pdf_name")
     ren = {c: f"pdf_{c}" for c in PDF_COLS}
     attrs = one[PDF_COLS].rename(columns=ren)
+    # Some bureaus print the reading (furigana) of the names above them: the PDF text then runs the reading into the
+    # name cells and the name cannot be told from the reading without guessing. Those three cells are not published.
+    furi = attrs[[f"pdf_{c}" for c in NAME_COLS]].apply(lambda col: col.map(has_furigana)).any(axis=1)
+    for c in NAME_COLS:
+        attrs.loc[furi, f"pdf_{c}"] = None
+    attrs["pdf_name_cells"] = np.where(furi, "furigana_in_source_not_published", "as_published")
     out = pts.join(attrs, on="pdf_name")
     keep = out["pdf_match"] == "pdf_unique"
-    for c in ren.values():
+    for c in [*ren.values(), "pdf_name_cells"]:
         out.loc[~keep, c] = None
     out["pdf_parse_status"] = out["pdf_parse_status"].where(keep, None)
     # consistency of the number in the file name with the number in the management number (a check, not a filter)

@@ -48,7 +48,10 @@ def collect() -> dict[str, Path]:
         raise SystemExit("the local verification or the card does not match the table")
     files = {"README.md": DATA / "README.md", "LICENSE": DATA / "LICENSE", "provenance.yaml": DATA / "provenance.yaml",
              f"raw/{run.name}/MANIFEST.json": run / "MANIFEST.json",
-             "parquet/kansui_points.parquet": DATA / "parquet" / "kansui_points.parquet"}  # fmt: skip
+             "parquet/kansui_points.parquet": DATA / "parquet" / "kansui_points.parquet",
+             "parquet/kansui_points_joined.parquet": DATA / "parquet" / "kansui_points_joined.parquet",
+             "parquet/pdf_records.parquet": DATA / "parquet" / "pdf_records.parquet",
+             f"raw/{run.name}/PDF_MANIFEST.json": run / "PDF_MANIFEST.json"}  # fmt: skip
     for layer in layers:
         m = man["files"][layer]
         p = run / "kml" / f"{layer}.kml"

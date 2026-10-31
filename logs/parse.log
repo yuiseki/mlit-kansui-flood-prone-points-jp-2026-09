@@ -1,0 +1,10 @@
+500 {('A', 'ok'): 448, ('A', 'ambiguous'): 22, ('unknown', 'layout_unknown'): 30}
+1000 {('A', 'ok'): 893, ('A', 'ambiguous'): 25, ('unknown', 'layout_unknown'): 45, ('B', 'ok'): 36}
+1500 {('A', 'ok'): 893, ('A', 'ambiguous'): 25, ('unknown', 'layout_unknown'): 46, ('B', 'ok'): 535}
+2000 {('A', 'ok'): 1151, ('A', 'ambiguous'): 39, ('unknown', 'layout_unknown'): 170, ('B', 'ok'): 638}
+2500 {('A', 'ok'): 1610, ('A', 'ambiguous'): 53, ('unknown', 'layout_unknown'): 197, ('B', 'ok'): 638}
+3000 {('A', 'ok'): 2018, ('A', 'ambiguous'): 53, ('unknown', 'layout_unknown'): 288, ('B', 'ok'): 638}
+3500 {('A', 'ok'): 2401, ('A', 'ambiguous'): 53, ('unknown', 'layout_unknown'): 390, ('B', 'ok'): 638}
+4000 {('A', 'ok'): 2888, ('A', 'ambiguous'): 54, ('unknown', 'layout_unknown'): 402, ('B', 'ok'): 638}
+{'pdfs': 4410, 'records': 4410, 'by_layout_status': {'A/ambiguous': 54, 'A/ok': 3315, 'B/ok': 638, 'unknown/layout_unknown': 403}, 'errors': []}
+PARSE_EXIT=0

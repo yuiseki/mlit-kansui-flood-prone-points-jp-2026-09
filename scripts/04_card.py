@@ -9,6 +9,7 @@ The licence block is PDL1.0 only for bureaus that docs/licence_status.json (writ
 import json
 
 import geopandas as gpd
+import pandas as pd
 import kansui
 
 ROOT = kansui.root()
@@ -39,6 +40,19 @@ def main() -> int:
     g = gpd.read_parquet(ROOT / "data" / "parquet" / "kansui_points.parquet")
     ex = json.loads((ROOT / "docs" / "export_log.json").read_text())
     chk = json.loads((ROOT / "docs" / "prefecture_check.json").read_text())
+    al = json.loads((ROOT / "docs" / "attach_log.json").read_text())
+    pl = json.loads((ROOT / "docs" / "pdf_parse_log.json").read_text())
+    pv = json.loads((ROOT / "docs" / "pdf_verify.json").read_text())
+    mc = json.loads((ROOT / "docs" / "manual_check.json").read_text())
+    jj = pd.read_parquet(ROOT / "data" / "parquet" / "kansui_points_joined.parquet")
+    jok = jj[jj["pdf_parse_status"] == "ok"]
+    fur = int((jj["pdf_name_cells"] == "furigana_in_source_not_published").sum())
+    nok = len(jok)
+    mg = int((~jok["pdf_mgmt_no"].astype(str).str.match(r"^.{2,4}[都道府県]-\d\d-\d{1,3}(-\d)?$")).sum())
+    pman = json.loads((run / "PDF_MANIFEST.json").read_text())["files"]
+    n404 = sum(1 for v in pman.values() if v["status"] == 404)
+    layouts = "\n".join(f"| {k} | {v} |" for k, v in pl["by_layout_status"].items())
+    matches = "\n".join(f"| {k} | {v} |" for k, v in al["match"].items())
     mods = sorted(m["last_modified"] for m in man["files"].values())
     ex0 = json.loads((ROOT / "docs" / "export_log.json").read_text())
     bureaus_in = sorted(
@@ -121,8 +135,12 @@ size_categories:
 - 1K<n<10K
 pretty_name: Flood-prone road points (冠水想定箇所) of the MLIT regional bureaus, 45 prefectures
 configs:
+- config_name: joined
+  data_files: parquet/kansui_points_joined.parquet
 - config_name: points
   data_files: parquet/kansui_points.parquet
+- config_name: pdf_records
+  data_files: parquet/pdf_records.parquet
 ---
 
 # {REPO}
@@ -160,6 +178,56 @@ added from the Chugoku bureau's map (not in the first list that was given).
 name), `lon`, `lat` (as in the KML, EPSG:4326), `pdf_href` (the link in the KML), `pdf_url` (resolved, https),
 `pdf_key` (its file stem), `style_url`, `source_last_modified`, `source_url`, `geometry`.
 
+## Attributes from the 箇所表 PDFs (config `joined`, table `pdf_records`)
+
+Each KML point links to a 箇所表 PDF of the bureau ({al["points"] - al["match"].get("no_pdf", 0):,} points have a link; {len(pman)} unique PDFs,
+fetched {man["fetched"]}, {n404} of them missing (HTTP 404)). The tables of the PDFs were read with pdfplumber, one row per
+described point, **the text of every cell as published (only whitespace collapsed)**. **The PDFs themselves are not
+redistributed**: they contain GSI maps and photographs of the sites. `raw/*/PDF_MANIFEST.json` and `pdf_sha256` give the
+URL, size, Last-Modified and sha256 of each PDF. A cell that could not be read with certainty is null and the row
+carries a `parse_status`; nothing was guessed.
+
+| layout / parse_status | PDFs (records) |
+|---|---|
+{layouts}
+
+`parse_status`: `ok` (all required cells read), `ambiguous` (a required cell is empty or unreadable; see `parse_note`),
+`layout_unknown` (no known layout; all attributes null). Layout A: the 説明表 / 箇所表 / 様式 tables; layout B: the
+道路冠水(危険)想定箇所 forms (石川, 富山, 新潟).
+
+How the points are matched to the table (`pdf_match` in `joined`; the key is the PDF file linked in the KML):
+
+| pdf_match | points |
+|---|---|
+{matches}
+
+`pdf_unique`: the PDF is linked by this point only and holds one record; `pdf_shared`: the PDF is linked by several points or
+holds several records, attributes are not attached (the records are in `pdf_records`); `no_pdf`; `pdf_missing`.
+`pdf_key_consistent` compares the number in the file name with the number in the management number (a check only).
+
+Checks: {pv["cells_checked"]:,} parsed cells of {pv["pdfs_checked"]} PDFs were looked up in `pdftotext -layout` of the same PDF
+({pv["cells_not_in_pdftotext"]} not found; the count of 管理番号/整理番号 labels equals the record count except {pv["label_count_mismatch"]} PDFs).
+Manual check: {mc["n"]} points drawn at random (seed {mc["seed"]}) were compared with the rendered text of their PDFs:
+{mc["correct"]} of {mc["n"]} fully correct ({mc["note"]}).
+
+Withheld cells: the 九州 bureau's PDFs (熊本県 150 points, 福岡県 138, 鹿児島県 50, 大分県 31, 宮崎県 20, 長崎県 16, 佐賀県 6) and 山形県 (48) print
+the reading (furigana) of the names above the names (青森県, 宮城県, 千葉県 and 兵庫県 have one flagged point each, which may be a wrap
+of a real name). The text of the PDF then runs the reading into the name cells, and the name cannot be told from the reading without
+guessing. In `joined` the three cells `pdf_place_name`, `pdf_underpass_name` and `pdf_road_kind` of such a point are null and
+`pdf_name_cells` says `furigana_in_source_not_published` (a point is flagged when a cell begins with a hiragana run and a space or
+has a hiragana, a space and a hiragana: {fur:,} points);
+`pdf_records` keeps the cells as read. The 管理番号 cell can carry a parse artefact (a lost hyphen as in 茨城県02-001 or 山形県02-204, or a
+second line appended): {mg:,} of the {nok:,} points with attributes do not match the pattern 県名-02-nnn; the file stem `pdf_key` is the
+reliable key.
+
+Column mapping (published label in the PDF to column; the prefix `pdf_` is added in `joined`): 管理番号/整理番号 `mgmt_no`
+(whitespace removed: a line break splits it), 箇所名称 `place_name`, 道路名 `road_name`, アンダーパス等名称/施設名
+`underpass_name`, 種別 `road_kind`, 都道府県名/県名 `pref_name`, 市町村 `municipality`, 字丁目 `aza_chome`, 番地 `banchi`,
+地先名 `sakimei`, 管理者 名称/TEL `manager_name`/`manager_tel`, 警察署 `police_name`/`police_tel`, 消防署 `fire_name`/`fire_tel`,
+備考 `remarks`. In layout B the police and fire cells hold name and TEL together as published (`police_text`, `fire_text`),
+and the manager's further cells are in `manager_tel_text`; the extra items of some forms (冠水範囲, 冠水原因, 排水ポンプの有無 ...)
+are in `extra_cells` as JSON. `layout`, `record_no`, `parse_status`, `parse_note` describe the parse.
+
 ## What was changed
 
 Only parsing: an XML parser reads each Placemark. Nothing was corrected. Two Placemarks that the publisher commented out
@@ -170,8 +238,8 @@ in the KML as withdrawn (京都府-02-020 and 大阪府-02-030, 2019/05/29) are 
 - {ex["rows_without_pdf"]} points have no link to a 箇所表 (all in 岩手県).
 - The 箇所表 PDF is not unique per point: {ex["pdf_key_duplicates"]} rows repeat the `pdf_key` of another row
   (秋田県 uses one PDF for its points, 山形県 has shared ones). The PDFs hold the attributes of the points (the
-  management number, the road, the underpass name, the address, the manager, the police and fire stations) in about
-  five layouts; they are not parsed here and not redistributed.
+  management number, the road, the underpass name, the address, the manager, the police and fire stations); see the
+  section on the attributes.
 - {chk["outside"]} of the {chk["points"]:,} points are outside the polygon of their stated prefecture
   (jp-admin-2026-09); {chk["outside_over_100m"]} of them by more than 100 m (3 in 宮城県 by about 35 km, 4 in 栃木県 by
   4 to 6 km). They are kept as published; the list is in `docs/prefecture_outliers.tsv`.
